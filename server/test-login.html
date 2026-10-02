@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login Test</title>
+</head>
+
+<body>
+  <h1>Admin Login Test</h1>
+
+  <button id="loginBtn">Test Admin Login</button>
+
+  <pre id="result"></pre>
+
+  <script>
+    const loginBtn = document.getElementById("loginBtn");
+    const result = document.getElementById("result");
+
+    loginBtn.addEventListener("click", async () => {
+      result.textContent = "Testing login...";
+
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/auth/login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: "admin@almalikalmasiah.com",
+              password: "Admin@123456",
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        result.textContent = JSON.stringify(
+          data,
+          null,
+          2
+        );
+
+        if (data.success) {
+          console.log("JWT Token:", data.data.token);
+        }
+      } catch (error) {
+        result.textContent =
+          "Login test failed: " + error.message;
+      }
+    });
+  </script>
+</body>
+</html>

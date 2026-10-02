@@ -1,0 +1,42 @@
+/* ==================================================
+   CONTACT / PHONE DIRECTION FIX
+   Keeps phone numbers in correct LTR order
+   when the website is using Arabic RTL mode.
+================================================== */
+
+a[href^="tel:"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+a[href^="mailto:"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+input[type="tel"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+input[type="email"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Explicit reusable class for phone/email values */
+.phone-number,
+.email-address {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Keep numbers readable inside mixed RTL text */
+.phone-number {
+  white-space: nowrap;
+}
