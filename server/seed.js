@@ -9,8 +9,16 @@ const seedAdmin = async () => {
   try {
     await connectDB();
 
-    const adminEmail = "admin@almalikalmasiah.com";
-    const adminPassword = "Admin@123456";
+    const adminEmail =
+      process.env.ADMIN_EMAIL || "admin@almalikalmasiah.com";
+
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+      throw new Error(
+        "ADMIN_PASSWORD environment variable is not defined"
+      );
+    }
 
     const hashedPassword = await bcrypt.hash(
       adminPassword,
@@ -34,7 +42,7 @@ const seedAdmin = async () => {
       console.log(" ADMIN PASSWORD RESET SUCCESSFULLY");
       console.log("==========================================");
       console.log(` Email: ${adminEmail}`);
-      console.log(` Password: ${adminPassword}`);
+      console.log(" Password: [hidden]");
       console.log("==========================================");
       console.log("");
 
@@ -53,8 +61,11 @@ const seedAdmin = async () => {
     console.log("==========================================");
     console.log(" ADMIN CREATED SUCCESSFULLY");
     console.log("==========================================");
+    console.log(` ID: ${admin._id}`);
+    console.log(` Name: ${admin.name}`);
     console.log(` Email: ${adminEmail}`);
-    console.log(` Password: ${adminPassword}`);
+    console.log(" Password: [hidden]");
+    console.log(` Role: ${admin.role}`);
     console.log("==========================================");
     console.log("");
 
