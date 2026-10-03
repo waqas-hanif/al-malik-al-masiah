@@ -3,9 +3,42 @@ import "dotenv/config";
 import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
 
-let dbConnectionPromise;
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://al-malik-al-masiah.vercel.app",
+];
+
+let dbConnectionPromise = null;
 
 const handler = async (req, res) => {
+  const origin = req.headers.origin;
+
+  // Handle CORS preflight BEFORE database connection
+  if (req.method === "OPTIONS") {
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.setHeader("Access-Control-Max-Age", "86400");
+
+    return res.status(204).end();
+  }
+
+  // Set CORS headers for normal requests as well
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
   try {
     if (!dbConnectionPromise) {
       dbConnectionPromise = connectDB();
@@ -16,6 +49,12 @@ const handler = async (req, res) => {
     return app(req, res);
   } catch (error) {
     console.error("Server request failed:", error);
+
+    // Keep CORS header even when backend/DB fails
+    if (origin && allowedOrigins.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
 
     return res.status(500).json({
       success: false,
