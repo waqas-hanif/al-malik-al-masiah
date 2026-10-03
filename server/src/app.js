@@ -10,44 +10,32 @@ import assistantRoutes from "./routes/assistantRoutes.js";
 
 const app = express();
 
-const CLIENT_URL =
-  process.env.CLIENT_URL ||
-  "http://localhost:5173";
+/* =========================
+   SECURITY
+========================= */
 
-// ==================================================
-// SECURITY
-// ==================================================
+app.use(helmet());
 
-app.use(
-  helmet({
-    crossOriginResourcePolicy: {
-      policy: "cross-origin",
-    },
-  })
-);
-
-// ==================================================
-// API RATE LIMIT
-// ==================================================
+/* =========================
+   RATE LIMITING
+========================= */
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 100,
-  standardHeaders: "draft-8",
+  max: 100,
+  standardHeaders: true,
   legacyHeaders: false,
-
   message: {
     success: false,
-    message:
-      "Too many requests. Please try again later.",
+    message: "Too many requests. Please try again later.",
   },
 });
 
 app.use("/api", apiLimiter);
 
-// ==================================================
-// CORS
-// ==================================================
+/* =========================
+   CORS
+========================= */
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -57,30 +45,41 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      // Allow requests without an Origin header
+      if (!origin) {
+        return callback(null, true);
       }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
     },
+
     credentials: true,
+
     methods: [
       "GET",
       "POST",
       "PUT",
       "PATCH",
       "DELETE",
+      "OPTIONS",
     ],
+
     allowedHeaders: [
       "Content-Type",
       "Authorization",
     ],
+
+    optionsSuccessStatus: 204,
   })
 );
 
-// ==================================================
-// BODY PARSER
-// ==================================================
+/* =========================
+   BODY PARSERS
+========================= */
 
 app.use(
   express.json({
@@ -95,138 +94,78 @@ app.use(
   })
 );
 
-// ==================================================
-// ROOT
-// ==================================================
+/* =========================
+   ROOT
+========================= */
 
-app.get("/", (_req, res) => {
-  res.status(200).json({
+app.get("/", (req, res) => {
+  res.json({
     success: true,
-    message:
-      "AL MALIK AL MASIAH API is running.",
-    company:
-      "AL MALIK AL MASIAH Trading & Contracting L.L.C",
+    message: "AL MALIK AL MASIAH API is running",
     version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
-// ==================================================
-// HEALTH
-// ==================================================
+/* =========================
+   HEALTH CHECK
+========================= */
 
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "API is healthy",
     timestamp: new Date().toISOString(),
-    environment:
-      process.env.NODE_ENV || "development",
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
-// ==================================================
-// AUTH
-// ==================================================
+/* =========================
+   API ROUTES
+========================= */
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+app.use("/api/auth", authRoutes);
 
-// ==================================================
-// CONTACT
-// ==================================================
+app.use("/api/contact", contactRoutes);
 
-app.use(
-  "/api/contact",
-  contactRoutes
-);
+app.use("/api/quotes", quoteRoutes);
 
-// ==================================================
-// QUOTES
-// ==================================================
+app.use("/api/assistant", assistantRoutes);
 
-app.use(
-  "/api/quotes",
-  quoteRoutes
-);
+/* =========================
+   404 HANDLER
+========================= */
 
-// ==================================================
-// AI ASSISTANT
-// ==================================================
-
-app.use(
-  "/api/assistant",
-  assistantRoutes
-);
-
-// ==================================================
-// 404
-// ==================================================
-
-app.use((_req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found.",
+    message: "Route not found",
+    path: req.originalUrl,
   });
 });
 
-// ==================================================
-// GLOBAL ERROR HANDLER
-// ==================================================
+/* =========================
+   GLOBAL ERROR HANDLER
+========================= */
 
-app.use(
-  (error, _req, res, _next) => {
-    console.error(
-      "API Error:",
-      error
-    );
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
 
-    if (
-      error.name ===
-      "ValidationError"
-    ) {
-      const errors = Object.values(
-        error.errors
-      ).map(
-        (item) => item.message
-      );
-
-      return res.status(400).json({
-        success: false,
-        message:
-          "Validation failed.",
-        errors,
-      });
-    }
-
-    if (
-      error.name === "CastError"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Invalid resource ID.",
-      });
-    }
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message:
-          "A record with this information already exists.",
-      });
-    }
-
-    return res.status(
-      error.statusCode || 500
-    ).json({
+  // CORS error
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
       success: false,
-      message:
-        error.message ||
-        "Internal server error.",
+      message: "CORS policy blocked this request.",
     });
   }
-);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message || "Internal server error",
+  });
+});
 
 export default app;
