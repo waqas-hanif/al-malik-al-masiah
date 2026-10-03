@@ -9,17 +9,22 @@ function QuoteForm({ language }) {
     company: "",
     email: "",
     phone: "",
-    service: "",
-    message: "",
+    projectType: "",
+    projectLocation: "",
+    budget: "",
+    expectedStartDate: "",
+    description: "",
   });
 
   const [status, setStatus] = useState("idle");
 
   const update = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const submit = async (e) => {
@@ -27,16 +32,55 @@ function QuoteForm({ language }) {
     setStatus("loading");
 
     try {
-      const response = await fetch(/api/quotes", {
+      const API_URL = (
+        import.meta.env.VITE_API_URL ||
+        "http://localhost:5000"
+      ).replace(/\/$/, "");
+
+      const payload = {
+        name: form.name,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        projectType: form.projectType,
+        projectLocation: form.projectLocation,
+        budget: form.budget,
+        expectedStartDate: form.expectedStartDate || undefined,
+        description: form.description,
+        language: ar ? "ar" : "en",
+        source: "website",
+      };
+
+      const response = await fetch(`${API_URL}/api/quotes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
+      const contentType =
+        response.headers.get("content-type") || "";
+
+      let data = null;
+
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            text || `Request failed with status ${response.status}`
+          );
+        }
+      }
+
       if (!response.ok) {
-        throw new Error("Request failed");
+        throw new Error(
+          data?.message ||
+            `Request failed with status ${response.status}`
+        );
       }
 
       setStatus("success");
@@ -46,10 +90,14 @@ function QuoteForm({ language }) {
         company: "",
         email: "",
         phone: "",
-        service: "",
-        message: "",
+        projectType: "",
+        projectLocation: "",
+        budget: "",
+        expectedStartDate: "",
+        description: "",
       });
-    } catch {
+    } catch (error) {
+      console.error("Quote submission error:", error);
       setStatus("error");
     }
   };
@@ -58,13 +106,21 @@ function QuoteForm({ language }) {
     return (
       <div className="form-success">
         <CheckCircle2 size={55} />
-        <h2>{ar ? "تم إرسال طلبك" : "Request submitted"}</h2>
+
+        <h2>
+          {ar ? "تم إرسال طلبك" : "Request submitted"}
+        </h2>
+
         <p>
           {ar
             ? "شكراً لتواصلك معنا. سيقوم فريقنا بالرد عليك."
             : "Thank you for contacting us. Our team will get back to you."}
         </p>
-        <button onClick={() => setStatus("idle")}>
+
+        <button
+          type="button"
+          onClick={() => setStatus("idle")}
+        >
           {ar ? "إرسال طلب آخر" : "Send another request"}
         </button>
       </div>
@@ -75,7 +131,13 @@ function QuoteForm({ language }) {
     <form className="quote-form" onSubmit={submit}>
       <div className="form-intro">
         <span>PROJECT ENQUIRY</span>
-        <h2>{ar ? "أخبرنا عن مشروعك" : "Tell us about your project"}</h2>
+
+        <h2>
+          {ar
+            ? "أخبرنا عن مشروعك"
+            : "Tell us about your project"}
+        </h2>
+
         <p>
           {ar
             ? "أرسل المعلومات الأساسية وسنتواصل معك."
@@ -84,9 +146,12 @@ function QuoteForm({ language }) {
       </div>
 
       <div className="form-grid">
+        {/* NAME */}
         <label>
           {ar ? "الاسم" : "Full Name"}
+
           <input
+            type="text"
             name="name"
             value={form.name}
             onChange={update}
@@ -95,18 +160,25 @@ function QuoteForm({ language }) {
           />
         </label>
 
+        {/* COMPANY */}
         <label>
           {ar ? "الشركة" : "Company"}
+
           <input
+            type="text"
             name="company"
             value={form.company}
             onChange={update}
-            placeholder={ar ? "اسم الشركة" : "Company name"}
+            placeholder={
+              ar ? "اسم الشركة" : "Company name"
+            }
           />
         </label>
 
+        {/* EMAIL */}
         <label>
           {ar ? "البريد الإلكتروني" : "Email"}
+
           <input
             type="email"
             name="email"
@@ -117,9 +189,12 @@ function QuoteForm({ language }) {
           />
         </label>
 
+        {/* PHONE */}
         <label>
           {ar ? "الهاتف" : "Phone"}
+
           <input
+            type="tel"
             name="phone"
             value={form.phone}
             onChange={update}
@@ -128,37 +203,102 @@ function QuoteForm({ language }) {
           />
         </label>
 
-        <label className="full-field">
-          {ar ? "الخدمة" : "Service"}
+        {/* PROJECT TYPE */}
+        <label>
+          {ar ? "نوع المشروع" : "Project Type"}
+
           <select
-            name="service"
-            value={form.service}
+            name="projectType"
+            value={form.projectType}
             onChange={update}
             required
           >
             <option value="">
-              {ar ? "اختر الخدمة" : "Select a service"}
+              {ar
+                ? "اختر نوع المشروع"
+                : "Select project type"}
             </option>
-            <option value="Construction">
+
+            <option value="Construction of Buildings & Roads">
               Construction of Buildings & Roads
             </option>
-            <option value="Heavy Equipment">
+
+            <option value="Supply of Heavy Equipment">
               Supply of Heavy Equipment
             </option>
-            <option value="Backfilling">Backfilling</option>
+
+            <option value="Backfilling">
+              Backfilling
+            </option>
           </select>
         </label>
 
-        <label className="full-field">
-          {ar ? "تفاصيل المشروع" : "Project Details"}
-          <textarea
-            name="message"
-            value={form.message}
+        {/* PROJECT LOCATION */}
+        <label>
+          {ar ? "موقع المشروع" : "Project Location"}
+
+          <input
+            type="text"
+            name="projectLocation"
+            value={form.projectLocation}
             onChange={update}
             required
+            placeholder={
+              ar
+                ? "موقع المشروع"
+                : "Project location"
+            }
+          />
+        </label>
+
+        {/* BUDGET */}
+        <label>
+          {ar ? "الميزانية" : "Budget"}
+
+          <input
+            type="text"
+            name="budget"
+            value={form.budget}
+            onChange={update}
+            placeholder={
+              ar
+                ? "الميزانية المتوقعة"
+                : "Estimated budget"
+            }
+          />
+        </label>
+
+        {/* EXPECTED START DATE */}
+        <label>
+          {ar
+            ? "تاريخ البدء المتوقع"
+            : "Expected Start Date"}
+
+          <input
+            type="date"
+            name="expectedStartDate"
+            value={form.expectedStartDate}
+            onChange={update}
+          />
+        </label>
+
+        {/* DESCRIPTION */}
+        <label className="full-field">
+          {ar
+            ? "تفاصيل المشروع"
+            : "Project Details"}
+
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={update}
+            required
+            minLength={20}
             rows="6"
             placeholder={
-              ar ? "اكتب تفاصيل مشروعك..." : "Tell us about your requirements..."
+              ar
+                ? "اكتب تفاصيل مشروعك..."
+                : "Tell us about your requirements..."
             }
           />
         </label>
@@ -172,16 +312,27 @@ function QuoteForm({ language }) {
         </div>
       )}
 
-      <button className="form-submit" disabled={status === "loading"}>
+      <button
+        type="submit"
+        className="form-submit"
+        disabled={status === "loading"}
+      >
         {status === "loading" ? (
           <>
-            <Loader2 className="spin" size={19} />
+            <Loader2
+              className="spin"
+              size={19}
+            />
+
             {ar ? "جار الإرسال..." : "Sending..."}
           </>
         ) : (
           <>
             <Send size={19} />
-            {ar ? "إرسال الطلب" : "Submit Request"}
+
+            {ar
+              ? "إرسال الطلب"
+              : "Submit Request"}
           </>
         )}
       </button>

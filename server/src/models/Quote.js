@@ -1,103 +1,343 @@
-import mongoose from "mongoose";
+import { useState } from "react";
+import { CheckCircle2, Loader2, Send } from "lucide-react";
 
-const quoteSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-      minlength: [2, "Name must be at least 2 characters"],
-      maxlength: [100, "Name cannot exceed 100 characters"],
-    },
+function QuoteForm({ language }) {
+  const ar = language === "ar";
 
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      trim: true,
-      lowercase: true,
-      maxlength: [150, "Email cannot exceed 150 characters"],
-      match: [
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        "Please provide a valid email address",
-      ],
-    },
+  const [form, setForm] = useState({
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
+    projectType: "",
+    projectLocation: "",
+    budget: "",
+    expectedStartDate: "",
+    description: "",
+  });
 
-    phone: {
-      type: String,
-      required: [true, "Phone number is required"],
-      trim: true,
-      maxlength: [30, "Phone number cannot exceed 30 characters"],
-    },
+  const [status, setStatus] = useState("idle");
 
-    company: {
-      type: String,
-      trim: true,
-      maxlength: [150, "Company name cannot exceed 150 characters"],
-    },
+  const update = (e) => {
+    const { name, value } = e.target;
 
-    projectType: {
-      type: String,
-      required: [true, "Project type is required"],
-      trim: true,
-      maxlength: [100, "Project type cannot exceed 100 characters"],
-    },
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-    projectLocation: {
-      type: String,
-      required: [true, "Project location is required"],
-      trim: true,
-      maxlength: [200, "Project location cannot exceed 200 characters"],
-    },
+  const submit = async (e) => {
+    e.preventDefault();
+    setStatus("loading");
 
-    budget: {
-      type: String,
-      trim: true,
-      maxlength: [100, "Budget cannot exceed 100 characters"],
-    },
+    try {
+      const API_URL = (
+        import.meta.env.VITE_API_URL ||
+        "http://localhost:5000"
+      ).replace(/\/$/, "");
 
-    expectedStartDate: {
-      type: Date,
-    },
+      const payload = {
+        name: form.name,
+        company: form.company,
+        email: form.email,
+        phone: form.phone,
+        projectType: form.projectType,
+        projectLocation: form.projectLocation,
+        budget: form.budget,
+        expectedStartDate: form.expectedStartDate || undefined,
+        description: form.description,
+        language: ar ? "ar" : "en",
+        source: "website",
+      };
 
-    description: {
-      type: String,
-      required: [true, "Project description is required"],
-      trim: true,
-      minlength: [20, "Description must be at least 20 characters"],
-      maxlength: [5000, "Description cannot exceed 5000 characters"],
-    },
+      const response = await fetch(`${API_URL}/api/quotes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    language: {
-      type: String,
-      enum: ["en", "ar"],
-      default: "en",
-    },
+      const contentType =
+        response.headers.get("content-type") || "";
 
-    status: {
-      type: String,
-      enum: [
-        "new",
-        "reviewing",
-        "quoted",
-        "approved",
-        "rejected",
-        "closed",
-      ],
-      default: "new",
-      index: true,
-    },
+      let data = null;
 
-    source: {
-      type: String,
-      enum: ["website", "whatsapp", "other"],
-      default: "website",
-    },
-  },
-  {
-    timestamps: true,
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+
+        if (!response.ok) {
+          throw new Error(
+            text || `Request failed with status ${response.status}`
+          );
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ||
+            `Request failed with status ${response.status}`
+        );
+      }
+
+      setStatus("success");
+
+      setForm({
+        name: "",
+        company: "",
+        email: "",
+        phone: "",
+        projectType: "",
+        projectLocation: "",
+        budget: "",
+        expectedStartDate: "",
+        description: "",
+      });
+    } catch (error) {
+      console.error("Quote submission error:", error);
+      setStatus("error");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div className="form-success">
+        <CheckCircle2 size={55} />
+
+        <h2>
+          {ar ? "تم إرسال طلبك" : "Request submitted"}
+        </h2>
+
+        <p>
+          {ar
+            ? "شكراً لتواصلك معنا. سيقوم فريقنا بالرد عليك."
+            : "Thank you for contacting us. Our team will get back to you."}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setStatus("idle")}
+        >
+          {ar ? "إرسال طلب آخر" : "Send another request"}
+        </button>
+      </div>
+    );
   }
-);
 
-const Quote = mongoose.model("Quote", quoteSchema);
+  return (
+    <form className="quote-form" onSubmit={submit}>
+      <div className="form-intro">
+        <span>PROJECT ENQUIRY</span>
 
-export default Quote;
+        <h2>
+          {ar
+            ? "أخبرنا عن مشروعك"
+            : "Tell us about your project"}
+        </h2>
+
+        <p>
+          {ar
+            ? "أرسل المعلومات الأساسية وسنتواصل معك."
+            : "Share the basic details and our team will contact you."}
+        </p>
+      </div>
+
+      <div className="form-grid">
+        {/* NAME */}
+        <label>
+          {ar ? "الاسم" : "Full Name"}
+
+          <input
+            type="text"
+            name="name"
+            value={form.name}
+            onChange={update}
+            required
+            placeholder={ar ? "اسمك" : "Your name"}
+          />
+        </label>
+
+        {/* COMPANY */}
+        <label>
+          {ar ? "الشركة" : "Company"}
+
+          <input
+            type="text"
+            name="company"
+            value={form.company}
+            onChange={update}
+            placeholder={
+              ar ? "اسم الشركة" : "Company name"
+            }
+          />
+        </label>
+
+        {/* EMAIL */}
+        <label>
+          {ar ? "البريد الإلكتروني" : "Email"}
+
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={update}
+            required
+            placeholder="name@company.com"
+          />
+        </label>
+
+        {/* PHONE */}
+        <label>
+          {ar ? "الهاتف" : "Phone"}
+
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={update}
+            required
+            placeholder="+968"
+          />
+        </label>
+
+        {/* PROJECT TYPE */}
+        <label>
+          {ar ? "نوع المشروع" : "Project Type"}
+
+          <select
+            name="projectType"
+            value={form.projectType}
+            onChange={update}
+            required
+          >
+            <option value="">
+              {ar
+                ? "اختر نوع المشروع"
+                : "Select project type"}
+            </option>
+
+            <option value="Construction of Buildings & Roads">
+              Construction of Buildings & Roads
+            </option>
+
+            <option value="Supply of Heavy Equipment">
+              Supply of Heavy Equipment
+            </option>
+
+            <option value="Backfilling">
+              Backfilling
+            </option>
+          </select>
+        </label>
+
+        {/* PROJECT LOCATION */}
+        <label>
+          {ar ? "موقع المشروع" : "Project Location"}
+
+          <input
+            type="text"
+            name="projectLocation"
+            value={form.projectLocation}
+            onChange={update}
+            required
+            placeholder={
+              ar
+                ? "موقع المشروع"
+                : "Project location"
+            }
+          />
+        </label>
+
+        {/* BUDGET */}
+        <label>
+          {ar ? "الميزانية" : "Budget"}
+
+          <input
+            type="text"
+            name="budget"
+            value={form.budget}
+            onChange={update}
+            placeholder={
+              ar
+                ? "الميزانية المتوقعة"
+                : "Estimated budget"
+            }
+          />
+        </label>
+
+        {/* EXPECTED START DATE */}
+        <label>
+          {ar
+            ? "تاريخ البدء المتوقع"
+            : "Expected Start Date"}
+
+          <input
+            type="date"
+            name="expectedStartDate"
+            value={form.expectedStartDate}
+            onChange={update}
+          />
+        </label>
+
+        {/* DESCRIPTION */}
+        <label className="full-field">
+          {ar
+            ? "تفاصيل المشروع"
+            : "Project Details"}
+
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={update}
+            required
+            minLength={20}
+            rows="6"
+            placeholder={
+              ar
+                ? "اكتب تفاصيل مشروعك..."
+                : "Tell us about your requirements..."
+            }
+          />
+        </label>
+      </div>
+
+      {status === "error" && (
+        <div className="form-error">
+          {ar
+            ? "تعذر إرسال الطلب. يرجى المحاولة مرة أخرى."
+            : "Unable to submit the request. Please try again."}
+        </div>
+      )}
+
+      <button
+        type="submit"
+        className="form-submit"
+        disabled={status === "loading"}
+      >
+        {status === "loading" ? (
+          <>
+            <Loader2
+              className="spin"
+              size={19}
+            />
+
+            {ar ? "جار الإرسال..." : "Sending..."}
+          </>
+        ) : (
+          <>
+            <Send size={19} />
+
+            {ar
+              ? "إرسال الطلب"
+              : "Submit Request"}
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
+
+export default QuoteForm;
