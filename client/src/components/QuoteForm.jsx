@@ -33,9 +33,9 @@ function QuoteForm({ language }) {
 
     try {
       const API_URL = (
-        import.meta.env.VITE_API_URL ||
-        "http://localhost:5000"
-      ).replace(/\/$/, "");
+  import.meta.env.VITE_API_URL ||
+  "https://al-malik-al-masiah-api.vercel.app"
+).replace(/\/$/, "");
 
       const payload = {
         name: form.name,
