@@ -12,26 +12,34 @@ const seedAdmin = async () => {
     const adminEmail = "admin@almalikalmasiah.com";
     const adminPassword = "Admin@123456";
 
+    const hashedPassword = await bcrypt.hash(
+      adminPassword,
+      12
+    );
+
     const existingAdmin = await Admin.findOne({
       email: adminEmail,
     });
 
     if (existingAdmin) {
+      existingAdmin.password = hashedPassword;
+      existingAdmin.name = "AL MALIK AL MASIAH Admin";
+      existingAdmin.role = "admin";
+      existingAdmin.isActive = true;
+
+      await existingAdmin.save();
+
       console.log("");
       console.log("==========================================");
-      console.log(" Admin already exists");
+      console.log(" ADMIN PASSWORD RESET SUCCESSFULLY");
       console.log("==========================================");
       console.log(` Email: ${adminEmail}`);
+      console.log(` Password: ${adminPassword}`);
       console.log("==========================================");
       console.log("");
 
       process.exit(0);
     }
-
-    const hashedPassword = await bcrypt.hash(
-      adminPassword,
-      12
-    );
 
     const admin = await Admin.create({
       name: "AL MALIK AL MASIAH Admin",
@@ -45,11 +53,8 @@ const seedAdmin = async () => {
     console.log("==========================================");
     console.log(" ADMIN CREATED SUCCESSFULLY");
     console.log("==========================================");
-    console.log(` ID: ${admin._id}`);
-    console.log(` Name: ${admin.name}`);
-    console.log(` Email: ${admin.email}`);
+    console.log(` Email: ${adminEmail}`);
     console.log(` Password: ${adminPassword}`);
-    console.log(` Role: ${admin.role}`);
     console.log("==========================================");
     console.log("");
 
