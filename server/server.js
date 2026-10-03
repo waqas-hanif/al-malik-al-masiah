@@ -3,36 +3,25 @@ import "dotenv/config";
 import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
 
-const PORT = process.env.PORT || 5000;
+let dbConnectionPromise;
 
-const startServer = async () => {
+const handler = async (req, res) => {
   try {
-    await connectDB();
+    if (!dbConnectionPromise) {
+      dbConnectionPromise = connectDB();
+    }
 
-    app.listen(PORT, () => {
-      console.log("");
-      console.log("==========================================");
-      console.log(" AL MALIK AL MASIAH API");
-      console.log("==========================================");
-      console.log(` Server: http://localhost:${PORT}`);
-      console.log(
-        ` Health: http://localhost:${PORT}/api/health`
-      );
-      console.log(
-        ` Environment: ${
-          process.env.NODE_ENV || "development"
-        }`
-      );
-      console.log("==========================================");
-      console.log("");
-    });
+    await dbConnectionPromise;
+
+    return app(req, res);
   } catch (error) {
-    console.error(
-      "Server startup failed:",
-      error.message
-    );
-    process.exit(1);
+    console.error("Server request failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
-startServer();
+export default handler;
