@@ -49,9 +49,20 @@ app.use("/api", apiLimiter);
 // CORS
 // ==================================================
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://al-malik-al-masiah.vercel.app",
+];
+
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: [
       "GET",

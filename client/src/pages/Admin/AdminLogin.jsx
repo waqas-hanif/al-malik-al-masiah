@@ -6,11 +6,7 @@ import { useTranslation } from "react-i18next";
 import LanguageToggle from "../../components/LanguageToggle";
 import Logo from "../../components/Logo";
 
-const API_BASE =
-  (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(
-    /\/$/,
-    "",
-  );
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 export default function AdminLogin() {
   const { t } = useTranslation();

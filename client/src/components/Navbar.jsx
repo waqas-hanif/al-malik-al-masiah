@@ -47,13 +47,12 @@ export default function Navbar() {
                 LOGO
             ================================================== */}
 
-            <a
-              href="/"
-              className="shrink-0"
-              onClick={handleMobileLinkClick}
-            >
-              <Logo compact />
-            </a>
+            <div
+  className="shrink-0"
+  onClick={handleMobileLinkClick}
+>
+  <Logo compact />
+</div>
 
             {/* ==================================================
                 DESKTOP NAV

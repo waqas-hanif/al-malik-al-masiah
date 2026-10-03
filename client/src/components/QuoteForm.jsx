@@ -27,7 +27,7 @@ function QuoteForm({ language }) {
     setStatus("loading");
 
     try {
-      const response = await fetch("http://localhost:5000/api/quotes", {
+      const response = await fetch(/api/quotes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

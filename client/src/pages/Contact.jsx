@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import Logo from "../components/Logo";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const contactItems = [
   {
