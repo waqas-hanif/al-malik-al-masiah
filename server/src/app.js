@@ -37,20 +37,35 @@ app.use("/api", apiLimiter);
    CORS
 ========================= */
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://al-malik-al-masiah.vercel.app",
-];
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  // Local development
+  if (origin === "http://localhost:5173") {
+    return true;
+  }
+
+  // Production frontend
+  if (origin === "https://al-malik-al-masiah.vercel.app") {
+    return true;
+  }
+
+  // Vercel preview deployments
+  if (
+    /^https:\/\/al-malik-al-masiah-[a-z0-9-]+\.vercel\.app$/i.test(
+      origin
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests without an Origin header
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
@@ -125,11 +140,8 @@ app.get("/api/health", (req, res) => {
 ========================= */
 
 app.use("/api/auth", authRoutes);
-
 app.use("/api/contact", contactRoutes);
-
 app.use("/api/quotes", quoteRoutes);
-
 app.use("/api/assistant", assistantRoutes);
 
 /* =========================
@@ -151,7 +163,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
 
-  // CORS error
   if (err.message === "Not allowed by CORS") {
     return res.status(403).json({
       success: false,
